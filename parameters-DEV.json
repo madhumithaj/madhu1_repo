@@ -10,28 +10,32 @@
     "keyVaultRg": {
       "value": "jpdc-storage-westus-rg"
     },
-	"adminUsername":{
+     "adminUsername":{
      "value": "jpdc-admin"
     },
 	"adminPassword":{
 	"value": "Jpdc-admin1234"
 	},
-
+		
     "settings": {
       "value": {
         "stage": "DEV",
         "location": "westus",
         "locationAbbrv": "",
-        "imageVHDUri": "https://jpdcprivgrsstadevwestus.blob.core.windows.net/images/baseline-osDisk-299898935.vhd",
+        "imageVHDUri": "https://jpdcprivgrsstadevwestus.blob.core.windows.net/images/baseline-osDisk-299898935.vhd", 
+
         "vmSizes": {
           "appGateway": "Standard_Small",
 		  "devvmsize" : "Standard_DS2_v2"
         },
+
         "defaultStorageType":"Premium_LRS",
+
         "nodeCount": {
           "appGatewayCapacity": 2,
-		  "devvm" : 2
+		  "devvm" : 1
         },
+
         "apiVersions": {
           "compute": "2017-03-30",
           "deploy": "2015-01-01",
@@ -39,39 +43,30 @@
           "network": "2017-06-01",
           "serviceBus": "2017-04-01"
         },
-		"backendIPAddresses": {
-      "value": [
-        {
-          "IpAddress": "10.44.6.5"
-        },
-        {
-          "IpAddress": "10.44.6.6"
-        },
-        {
-          "IpAddress": "10.44.6.7"
-        }
-      ]
-    },
+
         "quote": "'",
 
         "network": {
-          "devVnetRg": "jpdc-arm-validation",
-          "devVnet": "jpdc-vnet",
-          "devSubnet": "jpdc-subnet",
-		  "devNodeIps":  "10.44.6.26",
+          "devVnetRg": "jpdc-arm-validation1",
+          "devVnet": "jpdc-dev-vnet",
+          "devSubnet": "jpdc-dev-subnet",
+		  "gatewaysubnet": "jpdc-dev-gatewaysubnet",
+		  "devappgateway": "jpdc-dev-appgateway",
+          "devNodeIps":  "10.44.6.26",
           "devGatewayIp": "10.44.6.37",
-		  "devLoadBal": "10.44.6.50",
+		  
           "devGatewayVnet": "jpdc-services-vnet",
+		 "devLoadBal": "10.44.6.80",
           "devGatewaySubnet": "jpdc-appgateway-subnet",
           "devNodeSubnet": "jpdc-application-subnet",
 		  "devVMmNsg":  "jpdc-dev-vm-nsg",
-		  
+		  "securityRulesrdpname": "default-allow-rdp"
         },
 
         "vmDisks": [
-          {"Nm": "cassandra", "Sz": "750"},
-          {"Nm": "cassandra", "Sz": "750"},
-          {"Nm": "cassandra", "Sz": "750"}
+          {"Nm": "vmdisk", "Sz": "750"},
+          {"Nm": "vmdisk", "Sz": "750"},
+          {"Nm": "vmdisk", "Sz": "750"}
         
         ]
 
@@ -79,7 +74,7 @@
     },
 
     "templateUrl": {
-      "value": "https://raw.githubusercontent.com/madhumithaj/madhu1_repo/master/"
+      "value": "https://raw.githubusercontent.com/madhumithaj/madhu_repo/master/"
     }
   }
 }
