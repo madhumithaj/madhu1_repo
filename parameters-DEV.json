@@ -47,9 +47,9 @@
         "quote": "'",
 
         "network": {
-          "devVnetRg": "jpdc-arm-validation1",
-          "devVnet": "jpdc-dev-vnet",
-          "devSubnet": "jpdc-dev-subnet",
+          "devVnetRg": "jpdc-services-westus-rg",
+          "devVnet": "jpdc-services-vnet",
+          "devSubnet": "jpdc-application-subnet",
 		  "gatewaysubnet": "jpdc-dev-gatewaysubnet",
 		  "devappgateway": "jpdc-dev-appgateway",
           "devNodeIps":  "10.44.6.26",
