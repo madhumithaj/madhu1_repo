@@ -132,7 +132,7 @@
                         "properties": {
                             "provisioningState": "Succeeded",
                             "subnet": {
-                                "id": "[resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
+                                "id": "[resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet')]"
                             }
                         }
                     }
@@ -231,7 +231,6 @@
       "apiVersion": "[parameters('settings').apiVersions.deploy]",
       "dependsOn": [
         "[concat('Microsoft.Resources/deployments/', 'devNodes')]",
-        "[concat('Microsoft.Network/loadBalancers/', 'jpdc-', parameters('settings').stage,'-lb', parameters('settings').locationAbbrv)]",
         "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "properties": {
@@ -258,9 +257,6 @@
 
           "availabilitySetName": {
             "value": "[variables('availabilitySetName')]"
-          },
-          "loadbalancerRuleName": {
-            "value": "[concat(variables('lbID'),'/inboundNatRules/RDP-VM')]"
           }
         }
       }
