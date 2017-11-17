@@ -22,12 +22,7 @@
         "description": "User name for the Virtual Machine."
       }
     },
- "adminPassword": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Password for the Virtual Machine."
-      }
-    },
+ 
     "settings": {
       "value": null,
       "type": "object",
@@ -303,11 +298,18 @@
         "osProfile": {
           "computerName": "[variables('vmName')]",
           "adminUsername": "[parameters('adminUsername')]",
-		  "adminPassword": "[parameters('adminPassword')]",
+		  
           "linuxConfiguration": {
-            "disablePasswordAuthentication": false
-          }
-        },
+                            "disablePasswordAuthentication": true,
+                            "ssh": {
+                                "publicKeys": [
+                                    {
+                                        "path": "/home/jpdc-admin/.ssh/authorized_keys",
+                                        "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQCl97fE4XrCoDQTL/3dMOPZNQpRCAKOWFtUImtycs7VqMZlzLZCsR5cxQVjfm4/g1bNm8xEpdD1/lh8FvP62HbpdPHiDGDLUYG8uXlG+LtxCuhrMNOTBmALx1gW5FzgcXwMVaf4zA+RJu29Qw+XXlOCRWqshi6Iju0sRwrUWjfIzw== jpdc"
+                                    }
+                                ]
+                            }
+                        },
         "storageProfile": {
           "imageReference": {
             "id": "[resourceId('Microsoft.Compute/images', variables('image'))]"
