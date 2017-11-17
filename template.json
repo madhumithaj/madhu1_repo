@@ -132,7 +132,7 @@
                         "properties": {
                             "provisioningState": "Succeeded",
                             "subnet": {
-                                "id": "[resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet')]"
+                                "id": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
                             }
                         }
                     }
@@ -144,10 +144,10 @@
                         "name": "appGatewayFrontendIP",                        
                         "properties": {
                             "provisioningState": "Succeeded",
-                            "privateIPAddress": "10.44.1.10",
+                            "privateIPAddress": "10.44.6.10",
                             "privateIPAllocationMethod": "Static",
                             "subnet": {
-                                "id": "[resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
+                                "id": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
                             }
                         }
                     }
