@@ -10,19 +10,25 @@
     "keyVaultRg": {
       "value": "jpdc-storage-westus-rg"
     },
-     "adminUsername":{
+	"adminUsername":{
      "value": "jpdc-admin"
     },
 	"adminPassword":{
 	"value": "Jpdc-admin1234"
 	},
-		
+
     "settings": {
       "value": {
         "stage": "DEV",
         "location": "westus",
         "locationAbbrv": "",
-        "imageVHDUri": "https://jpdcprivgrsstadevwestus.blob.core.windows.net/images/baseline-osDisk-299898935.vhd", 
+
+        
+
+        
+
+        "imageVHDUri": "https://jpdcprivgrsstadevwestus.blob.core.windows.net/images/baseline-osDisk-299898935.vhd",
+                
 
         "vmSizes": {
           "appGateway": "Standard_Small",
@@ -33,7 +39,7 @@
 
         "nodeCount": {
           "appGatewayCapacity": 2,
-		  "devvm" : 1
+		  "devvm" : 2
         },
 
         "apiVersions": {
@@ -47,26 +53,22 @@
         "quote": "'",
 
         "network": {
-          "devVnetRg": "jpdc-services-westus-rg",
-          "devVnet": "jpdc-services-vnet",
-          "devSubnet": "jpdc-application-subnet",
-		  "gatewaysubnet": "jpdc-dev-gatewaysubnet",
+          "devVnetRg": "jpdc-arm-validation",
+          "devVnet": "jpdc-arm-validation-vnet",
+          "devSubnet": "jpdc-subnet",
 		  "devappgateway": "jpdc-dev-appgateway",
-          "devNodeIps":  "10.44.6.26",
-          "devGatewayIp": "10.44.6.37",
-		  
+          "devNodeIps": "10.45.0.26",
+          "devGatewayIp": "10.45.0.37",
           "devGatewayVnet": "jpdc-services-vnet",
-		 "devLoadBal": "10.44.6.80",
           "devGatewaySubnet": "jpdc-appgateway-subnet",
           "devNodeSubnet": "jpdc-application-subnet",
-		  "devVMmNsg":  "jpdc-dev-vm-nsg",
-		  "securityRulesrdpname": "default-allow-rdp"
+		  "devVMmNsg":  "jpdc-dev-vm-nsg"
         },
 
         "vmDisks": [
-          {"Nm": "vmdisk", "Sz": "750"},
-          {"Nm": "vmdisk", "Sz": "750"},
-          {"Nm": "vmdisk", "Sz": "750"}
+          {"Nm": "cassandra", "Sz": "750"},
+          {"Nm": "cassandra", "Sz": "750"},
+          {"Nm": "cassandra", "Sz": "750"}
         
         ]
 
@@ -74,7 +76,7 @@
     },
 
     "templateUrl": {
-      "value": "https://raw.githubusercontent.com/madhumithaj/madhu1_repo/master/"
+      "value": "https://github.com/madhumithaj/madhu1_repo/blob/master/"
     }
   }
 }
