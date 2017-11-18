@@ -23,12 +23,12 @@
         "location": "westus",
         "locationAbbrv": "",
 
-        
 
-        
+
+
 
         "imageVHDUri": "https://jpdcprivgrsstadevwestus.blob.core.windows.net/images/baseline-osDisk-299898935.vhd",
-                
+
 
         "vmSizes": {
           "appGateway": "Standard_Small",
@@ -56,27 +56,28 @@
           "devVnetRg": "jpdc-arm-validation",
           "devVnet": "jpdc-arm-validation-vnet",
           "devSubnet": "jpdc-subnet",
-		  "devappgateway": "jpdc-dev-appgateway",
-          "devNodeIps": "10.45.0.26",
+          "devLBip": "10.45.0.25",
+          "appNodeIps": "10.45.0.35",
           "devGatewayIp": "10.45.0.37",
           "devGatewayVnet": "jpdc-services-vnet",
           "devGatewaySubnet": "jpdc-appgateway-subnet",
-          "devNodeSubnet": "jpdc-application-subnet",
-		  "devVMmNsg":  "jpdc-dev-vm-nsg"
+		  "appNodeSubnet": "jpdc-application-subnet",
+		  "devVMmNsg":  "jpdc-dev-vm-nsg",
+		  "securityRulesrdpname": "default-allow-rdp"
         },
 
         "vmDisks": [
           {"Nm": "cassandra", "Sz": "750"},
           {"Nm": "cassandra", "Sz": "750"},
           {"Nm": "cassandra", "Sz": "750"}
-        
+
         ]
 
       }
     },
 
     "templateUrl": {
-      "value": "https://github.com/madhumithaj/madhu1_repo/blob/master/"
+      "value": "https://raw.githubusercontent.com/mnsameer/vnet/master"
     }
   }
 }
