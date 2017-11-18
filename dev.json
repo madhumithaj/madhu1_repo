@@ -22,7 +22,12 @@
         "description": "User name for the Virtual Machine."
       }
     },
- 
+ "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password for the Virtual Machine."
+      }
+    },
     "settings": {
       "value": null,
       "type": "object",
@@ -50,24 +55,92 @@
 
     "NICName": "[concat(parameters('nodeName').name, '-nic1')]",
     "ipArray": "[parameters('settings').network.devNodeIps]",
-
+"lbID": "[resourceId('Microsoft.Network/loadBalancers','JPDC-LB')]",
+"backendpoolname": "jpdc-dev-pool",
     "devVnetRg": "[parameters('settings').network.devVnetRg]",
     "devVnet": "[parameters('settings').network.devVnet]",
     "devSubnet": "[parameters('settings').network.devSubnet]",
 	"devVMmNsg":"[parameters('settings').network.devVMmNsg]",
 	"diskCreate": "[parameters('settings').vmDisks]",
 	"devNodePre": "[concat('jpdc-', toLower(parameters('settings').stage), parameters('settings').locationAbbrv)]"
-	
+
   },
 
   "resources": [
+    {
+          "comments": "Generalized from resource: virtualNetworks/jpdc-dev-vnet'.",
+          "type": "Microsoft.Network/virtualNetworks",
+          "name": "[parameters('settings').network.devVnet]",
+          "apiVersion": "2017-06-01",
+          "location": "westus",
+          "scale": null,
+          "properties": {
+              "provisioningState": "Succeeded",
+              "addressSpace": {
+                  "addressPrefixes": [
+                      "10.5.0.0/16"
+                  ]
+              },
+              "subnets": [
+                  {
+                      "name": "[parameters('settings').network.devSubnet]",
+                      "properties": {
+                          "provisioningState": "Succeeded",
+                          "addressPrefix": "10.5.6.0/24"
+                      }
+                  }
+              ],
+              "virtualNetworkPeerings": []
+          },
+          "dependsOn": []
+      },
+    {
+     "apiVersion": "2015-05-01-preview",
+     "name": "JPDC-LB",
+     "type": "Microsoft.Network/loadBalancers",
+     "location": "[resourceGroup().location]",
+     "dependsOn": [
+       "[concat('Microsoft.Network/virtualNetworks/',parameters('settings').network.devVnet)]"
+     ],
+     "properties": {
+       "frontendIPConfigurations": [
+         {
+           "name": "LoadBalancerFrontEnd",
+           "properties": {
+             "privateIPAddress": "[parameters('settings').network.devLBip]",
+  	         "privateIPAllocationMethod": "Static",
+             "subnet":{
+               "id": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
+             },
+             "loadBalancerBackendAddressPools": [
+               {
+                  "id": "[concat(variables('lbID'), '/backendAddressPools/', variables('backendpoolname'))]"
+               }
+             ],
+             "loadBalancerInboundNatRules": []
+             }
+           }
+         ],
+
+       "backendAddressPools": [
+         {
+           "name": "[variables('backendpoolname')]"
+         }
+       ],
+       "inboundNatRules": [],
+       "loadBalancingRules": [],
+       "probes": [ ]
+       }
+     },
     {
       "comments": "Create an Image from the specified Baseline vhd",
       "type": "Microsoft.Compute/images",
       "name": "[variables('image')]",
       "apiVersion": "[parameters('settings').apiVersions.compute]",
       "location": "[resourceGroup().location]",
-      "dependsOn": [ ],
+      "dependsOn": [
+        "[concat('Microsoft.Network/loadBalancers/','JPDC-LB')]"
+       ],
       "properties": {
         "storageProfile": {
           "osDisk": {
@@ -89,10 +162,10 @@
             "scale": null,
             "properties": {
                 "provisioningState": "Succeeded",
-                
+
                 "securityRules": [
                     {
-                        "name": "default-allow-rdp",                        
+                        "name": "default-allow-rdp",
                         "properties": {
                             "provisioningState": "Succeeded",
                             "protocol": "TCP",
@@ -108,7 +181,7 @@
                         }
                     },
                     {
-                        "name": "DNS-TCP",                       
+                        "name": "DNS-TCP",
                         "properties": {
                             "provisioningState": "Succeeded",
                             "protocol": "TCP",
@@ -126,7 +199,7 @@
                 ],
                 "defaultSecurityRules": [
                     {
-                        "name": "AllowVnetInBound",                       
+                        "name": "AllowVnetInBound",
                         "properties": {
                             "provisioningState": "Succeeded",
                             "description": "Allow inbound traffic from all VMs in VNET",
@@ -142,9 +215,9 @@
                             "destinationAddressPrefixes": []
                         }
                     },
-                   
+
                     {
-                        "name": "DenyAllInBound",                       
+                        "name": "DenyAllInBound",
                         "properties": {
                             "provisioningState": "Succeeded",
                             "description": "Deny all inbound traffic",
@@ -161,7 +234,7 @@
                         }
                     },
                     {
-                        "name": "AllowVnetOutBound",                       
+                        "name": "AllowVnetOutBound",
                         "properties": {
                             "provisioningState": "Succeeded",
                             "description": "Allow outbound traffic from all VMs to all VMs in VNET",
@@ -178,7 +251,7 @@
                         }
                     },
                     {
-                        "name": "AllowInternetOutBound",                        
+                        "name": "AllowInternetOutBound",
                         "properties": {
                             "provisioningState": "Succeeded",
                             "description": "Allow outbound traffic from all VMs to Internet",
@@ -195,7 +268,7 @@
                         }
                     },
                     {
-                        "name": "DenyAllOutBound",                     
+                        "name": "DenyAllOutBound",
                         "properties": {
                             "provisioningState": "Succeeded",
                             "description": "Deny all outbound traffic",
@@ -215,7 +288,6 @@
             },
             "dependsOn": []
         },
-        
 		{
 		"comments": "Network Interface for this dev node, should be a static IP",
       "type": "Microsoft.Network/networkInterfaces",
@@ -223,17 +295,25 @@
       "apiVersion": "[parameters('settings').apiVersions.network]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-         "[concat('Microsoft.Network/virtualNetworks/', parameters('settings').network.devVnet)]"	  ],
+         "[concat('Microsoft.Network/loadBalancers/','JPDC-LB')]",
+         "[concat('Microsoft.Network/virtualNetworks/', parameters('settings').network.devVnet)]"
+		 ],
       "properties": {
         "ipConfigurations": [
           {
             "name": "ipconfig1",
             "properties": {
-              "privateIPAddress": "[parameters('settings').network.devNodeIps]",
+              "privateIPAddress": "10.45.0.26",
               "privateIPAllocationMethod": "Static",
               "subnet": {
                 "id": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
-              }
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                   "id": "[concat(variables('lbID'), '/backendAddressPools/', variables('backendpoolname'))]"
+                }
+              ],
+              "loadBalancerInboundNatRules": []
             }
           }
         ],
@@ -243,8 +323,8 @@
         "enableIPForwarding": false
       }
     },
-		
-    
+
+
     {
       "comments": "dev Virtual Node(s). Runs fixed jobs.",
       "type": "Microsoft.Compute/virtualMachines",
@@ -253,8 +333,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/images', variables('image'))]",
-		"[resourceId('Microsoft.Network/networkInterfaces', variables('NICName'))]"
-        
+		    "[resourceId('Microsoft.Network/networkInterfaces', variables('NICName'))]"
       ],
       "tags": {
         "displayName": "VirtualMachine",
@@ -270,7 +349,7 @@
         "osProfile": {
           "computerName": "[variables('vmName')]",
           "adminUsername": "[parameters('adminUsername')]",
-		  
+		  "adminPassword": "[parameters('adminPassword')]",
           "linuxConfiguration": {
                             "disablePasswordAuthentication": true,
                             "ssh": {
@@ -281,7 +360,8 @@
                                     }
                                 ]
                             }
-                        },
+                        }
+        },
         "storageProfile": {
           "imageReference": {
             "id": "[resourceId('Microsoft.Compute/images', variables('image'))]"
