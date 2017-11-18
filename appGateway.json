@@ -1,0 +1,185 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "nodeInfo": {
+      "value": null,
+      "type": "Object",
+      "metadata": {
+        "description": "Weg node and app gateway info " 
+      }
+    },
+    "AppGateCert": {
+      "value": null,
+      "type": "String",
+      "metadata": {
+        "description": "Base64 Encoded SSL Cert for the Application Gateway" 
+      }
+    },
+    "settings": {
+      "value": null,
+      "type": "object",
+      "metadata": {
+        "description": "Object Containing all of the common settings for AD, api versions, VM Sizing, etc. See the parameters-XXX.json." 
+      }
+    }
+  },
+
+  "variables": {
+    "certNm": "[concat('jpdc', parameters('settings').stage, '-cert')]",
+    "certPassword": "jpdcdevlopment@17",
+
+    "devVnetRg": "[parameters('settings').network.devVnetRg]",
+    "devVnet": "[parameters('settings').network.devVnet]",
+    "devSubnet": "[parameters('settings').network.devSubnet]",
+    "appNodeSubnet": "[parameters('settings').network.webNodeSubnet]",
+    "IpArray": "[parameters('settings').network.appNodeIps]",
+
+    "appGwSubnet": "[parameters('settings').network.appNodeSubnet]",
+    "appGwSubnetId": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]",
+
+    "appGwName": "[parameters('nodeInfo').appGateway]",
+    "appGwID": "[resourceId('Microsoft.Network/applicationGateways', variables('appGwName'))]",
+
+    "appGatewayPool": "[parameters('nodeInfo').appGatewayPool]", 
+    "subnetId": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]",
+    "backEndPool": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/applicationGateways/', variables('appGwName'), '/backendAddressPools/', variables('appGatewayPool'))]"
+  },
+
+  "resources": [
+    {
+      "comments": "Application Gateway with cookie session persistence for JPDC  Pool.",
+      "type": "Microsoft.Network/applicationGateways",
+      "name": "[variables('appGwName')]",
+      "apiVersion": "[parameters('settings').apiVersions.network]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "sku": {
+          "name": "[parameters('settings').vmSizes.appGateway]",
+          "tier": "Standard",
+          "capacity": "[parameters('settings').nodeCount.appGatewayCapacity]"
+        },
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[variables('appGwSubnetId')]"
+              }
+            }
+          }
+        ],
+        "sslCertificates": [
+          {
+            "name": "[variables('certNm')]",
+            "properties": {
+              "data": "[parameters('AppGateCert')]",
+              "password": "[variables('certPassword')]"
+            }
+          }
+        ],
+        "authenticationCertificates": [],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGatewayFrontendIP",
+            "properties": {
+              "privateIPAddress": "[parameters('settings').network.devGatewayIp]",
+              "subnet": {
+                "id": "[variables('appGwSubnetId')]"
+              },
+              "privateIPAllocationMethod": "Static"
+            }
+          }
+        ],
+        "frontendPorts": [
+          {
+            "name": "appGatewayFrontendPort",
+            "properties": {
+              "port": 443
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('appGatewayPool')]",
+            "properties": {
+              "BackendAddresses": "[variables('IpArray')]"
+            }
+          }
+        ],
+
+        "backendHttpSettingsCollection": [
+          {
+            "name": "appGatewayBackendHttpSettings",
+            "properties": {
+              "port": 8080,
+              "protocol": "Http",
+              "cookieBasedAffinity": "Enabled",
+              "pickHostNameFromBackendAddress": false,
+              "probeEnabled": true,
+              "requestTimeout": 30,
+              "probe":
+              {
+                "id": "[concat(variables('appGwID'), '/probes/jpdc_probe')]"
+              }
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "appGatewayHttpListener",
+            "properties": {
+              "frontendIPConfiguration": {
+                "Id": "[concat(variables('appGwID'), '/frontendIPConfigurations/appGatewayFrontendIP')]"
+              },
+              "FrontendPort": {
+                "Id": "[concat(variables('appGwID'), '/frontendPorts/appGatewayFrontendPort')]"
+              },
+              "protocol": "Https",
+              "sslCertificate": {
+                "Id": "[concat(variables('appGwID'), '/sslCertificates/', variables('certNm'))]"
+              },
+              "requireServerNameIndication": false
+            }
+          }
+        ],
+        "urlPathMaps": [],
+        "requestRoutingRules": [
+          {
+            "name": "rule1",
+            "properties": {
+              "ruleType": "Basic",
+              "httpListener": {
+                "id": "[concat(variables('appGwID'), '/httpListeners/appGatewayHttpListener')]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(variables('appGwID'), '/backendAddressPools/', variables('appGatewayPool'))]"
+              },
+              "backendHttpSettings": {
+                "id": "[concat(variables('appGwID'), '/backendHttpSettingsCollection/appGatewayBackendHttpSettings')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "jpdc_probe",
+            "properties": {
+              "protocol": "Http",
+              "host": "127.0.0.1",
+              
+              "interval": 30,
+              "timeout": 30,
+              "unhealthyThreshold": 2,
+              "pickHostNameFromBackendHttpSettings": false,
+              "minServers": 0,
+              "match": {}
+            }
+          }
+        ],
+        "redirectConfigurations": []
+      },
+      "dependsOn": []
+    }
+  ]
+}
