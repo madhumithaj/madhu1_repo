@@ -18,18 +18,6 @@
         "description": "Resource Group for the above Key vault"
       }
     },
-	"adminUsername": {
-      "type": "string",
-      "metadata": {
-        "description": "User name for the Virtual Machine."
-      }
-    },
-    "adminPassword": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Password for the Virtual Machine."
-      }
-    },
 
     "settings": {
       "value": null,
@@ -48,26 +36,29 @@
   },
 
   "variables": {
+  
     "availabilitySetName": "[concat('jpdc-avail', parameters('settings').locationAbbrv)]",
     "keyVault": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', parameters('keyVaultRg'), '/providers/Microsoft.KeyVault/vaults/', parameters('keyVaultNm'))]",
     "devUrl": "[concat(parameters('templateUrl'), '/dev.json')]",
 	"policyUrl": "[concat(parameters('templateUrl'), '/policy.json')]",
 	"backupUrl": "[concat(parameters('templateUrl'), '/backup.json')]",
 	"resourcegrp": "[concat('jpdc','-arm', parameters('settings').locationAbbrv, '-rg')]",
-	"devappgateway": "[parameters('settings').network.devappgateway]",
-	"devVnetRg": "[parameters('settings').network.devVnetRg]",
-    "devVnet": "[parameters('settings').network.devVnet]",
-    "devSubnet": "[parameters('settings').network.devSubnet]",
-	"devNodePre": "[concat('jpdc-', toLower(parameters('settings').stage), parameters('settings').locationAbbrv)]"
+	"devNodePre": "[concat('jpdc-', toLower(parameters('settings').stage), parameters('settings').locationAbbrv)]",
+    "appGatewayUrl": "[concat(parameters('templateUrl'), '/appGateway.json')]",
+
+    "nodePrefix": "[concat('jpdc-', parameters('settings').stage, parameters('settings').locationAbbrv)]",
+    "nodeInfo": 
+    {
+      "appGateway":  "[concat(variables('nodePrefix'), '-app-gateway')]",
+      "appGatewayPool": "[concat(variables('nodePrefix'), '-be-pool')]"
+    }
   },
   "resources": [
-  {
+    {
+      "comments": "Call the common template to prepare the AD join command and OMS Custom Data string",
       "name": "devNodes",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "[parameters('settings').apiVersions.deploy]",
-      "dependsOn": [
-       "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
-      ],
       "properties": {
         "mode": "Incremental",
         "templateLink": {
@@ -75,7 +66,7 @@
           "contentVersion": "1.0.0.0"
         },
 
-		"parameters": {
+        "parameters": {
           "devDisksUrl": {
             "value": "[concat(parameters('templateUrl'), '/devDisks.json')]"
           },
@@ -99,143 +90,62 @@
             "value": "[variables('availabilitySetName')]"
           }
         }
-	  }
-	 
-    },
-  {
-      "comments": "Availabity set that contains the nodes, do not want both down at the same time.",
-      "type": "Microsoft.Compute/availabilitySets",
-      "sku": {
-        "name": "Aligned"
-      },
-      "name": "[variables('availabilitySetName')]",
-      "apiVersion": "[parameters('settings').apiVersions.compute]",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "platformUpdateDomainCount": 5,
-        "platformFaultDomainCount": 2
       }
     },
-	{
-            "comments": "Generalized from resource applicationGateways",
-            "type": "Microsoft.Network/applicationGateways",
-            "name": "[variables('devappgateway')]",
-            "apiVersion": "2017-06-01",
-            "location": "westus",
-            "scale": null,
-            "properties": {
-                "provisioningState": "Succeeded",               
-                "sku": {
-                    "name": "Standard_Medium",
-                    "tier": "Standard",
-                    "capacity": 2
-                },
-                "gatewayIPConfigurations": [
-                    {
-                        "name": "appGatewayIpConfig",                       
-                        "properties": {
-                            "provisioningState": "Succeeded",
-                            "subnet": {
-                                "id": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
-                            }
-                        }
-                    }
-                ],
-                "sslCertificates": [],
-                "authenticationCertificates": [],
-                "frontendIPConfigurations": [
-                    {
-                        "name": "appGatewayFrontendIP",                        
-                        "properties": {
-                            "provisioningState": "Succeeded",
-                            "privateIPAddress": "10.44.6.10",
-                            "privateIPAllocationMethod": "Static",
-                            "subnet": {
-                                "id": "[concat(resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
-                            }
-                        }
-                    }
-                ],
-                "frontendPorts": [
-                    {
-                        "name": "appGatewayFrontendPort",                        
-                        "properties": {
-                            "provisioningState": "Succeeded",
-                            "port": 80
-                        }
-                    }
-                ],
-                "backendAddressPools": [
-                    {
-                        "name": "appGatewayBackendPool",                        
-                        "properties": {
-                            "provisioningState": "Succeeded",
-                            "backendAddresses": []
-                        }
-                    }
-                ],
-                "backendHttpSettingsCollection": [
-                    {
-                        "name": "appGatewayBackendHttpSettings",                       
-                        "properties": {
-                            "provisioningState": "Succeeded",
-                            "port": 80,
-                            "protocol": "Http",
-                            "cookieBasedAffinity": "Disabled",
-                            "pickHostNameFromBackendAddress": false,
-                            "requestTimeout": 30
-                        }
-                    }
-                ],
-                "httpListeners": [
-                    {
-                        "name": "appGatewayHttpListener",                        
-                        "properties": {
-                            "provisioningState": "Succeeded",
-                            "frontendIPConfiguration": {                               
-								 "Id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('devappgateway'), '/frontendIPConfigurations/appGatewayFrontendIP')]"
-                            },
-                            "frontendPort": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('devappgateway'), '/frontendPorts/appGatewayFrontendPort')]"
-                            },
-                            "protocol": "Http",
-                            "requireServerNameIndication": false
-                        }
-                    }
-                ],
-                "urlPathMaps": [],
-                "requestRoutingRules": [
-                    {
-                        "name": "rule1",                        
-                        "properties": {
-                            "provisioningState": "Succeeded",
-                            "ruleType": "Basic",
-                            "httpListener": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('devappgateway'), '/httpListeners/appGatewayHttpListener')]"
-                            },
-                            "backendAddressPool": {
-                             "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('devappgateway'), '/backendAddressPools/appGatewayBackendPool')]"
-                            },
-                            "backendHttpSettings": {
-                                "id": "[concat(resourceId('Microsoft.Network/applicationGateways', variables('devappgateway'), '/backendHttpSettingsCollection/appGatewayBackendHttpSettings')]"
-                            }
-                        }
-                    }
-                ],
-                "probes": [],
-                "redirectConfigurations": []
-            },
-            "dependsOn": [
-                "[resourceId(variables('devVnetRg'), 'Microsoft.Network/virtualNetworks', variables('devVnet')), '/subnets/', variables('devSubnet'))]"
-            ]
-        },
     {
-      "name": "devNodes1",
+        "comments": "Availabity set that contains the nodes, do not want both down at the same time.",
+        "type": "Microsoft.Compute/availabilitySets",
+        "sku": {
+          "name": "Aligned"
+        },
+        "name": "[variables('availabilitySetName')]",
+        "apiVersion": "[parameters('settings').apiVersions.compute]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "platformUpdateDomainCount": 5,
+          "platformFaultDomainCount": 2
+        }
+      },
+    {
+      "name": "JpdcAppGateway",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "[parameters('settings').apiVersions.deploy]",
       "dependsOn": [
-        "[concat('Microsoft.Resources/deployments/', 'devNodes')]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
+        "[concat('Microsoft.Resources/deployments/', 'devNodes')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('appGatewayUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+
+        "parameters": {
+          "nodeInfo": {
+            "value": "[variables('nodeInfo')]"
+          },
+
+          "webAppGateCert": {
+            "reference": {
+              "keyVault": {
+                "id": "[variables('keyVault')]"
+               },
+              "secretName": "ahm-app-gw-ssl"
+            }
+          },
+
+          "settings": {
+            "value": "[parameters('settings')]"
+          }
+        }
+      }
+    },
+	{
+      "name": "devNode1",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "[parameters('settings').apiVersions.deploy]",
+      "dependsOn": [
+        "[concat('Microsoft.Resources/deployments/', 'devNodes')]"
       ],
       "properties": {
         "mode": "Incremental",
@@ -245,82 +155,42 @@
         },
 
         "parameters": {
-          "devDisksUrl": {
-            "value": "[concat(parameters('templateUrl'), '/devDisks.json')]"
-          },
-
-          "nodeName": {
+          "nodeInfo": 
+          {
             "value": {
-              "name": "[variables('devNodePre')]"           
+              "info": "[variables('nodeInfo')]",
+              "name": "[concat(variables('nodePrefix'), copyIndex(1))]",
+              "number": "[copyIndex()]"
             }
           },
 
           "settings": {
             "value": "[parameters('settings')]"
           },
-
           "availabilitySetName": {
             "value": "[variables('availabilitySetName')]"
+          },
+
+          "sshKey": {
+            "reference": {
+              "keyVault": {
+                "id": "[variables('keyVault')]"
+              },
+              "secretName": "jpdc-ssh-key"
+            }
+          },
+          "sshPub": {
+            "reference": {
+              "keyVault": {
+                "id": "[variables('keyVault')]"
+              },
+              "secretName": "jpdc-ssh-pub"
+            }
           }
         }
       }
-    },
-    {
-      "name": "JPDC-Dev-Policy",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "[parameters('settings').apiVersions.deploy]",
-      "dependsOn": [
-        "[concat('Microsoft.Resources/deployments/', 'devNodes')]",
-        "[concat('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
-      ],
-
-      "properties": {
-        "mode": "Incremental",
-        "templateLink": {
-          "uri": "[variables('policyUrl')]",
-          "contentVersion": "1.0.0.0"
-        },
-
-    "parameters": {
-    "vaultName": {
-      "value": "devbackup"
-    },
-    "policyName": {
-        "value": "DailyBackupPolicy1"
-    },
-    "scheduleRunDays": {
-        "value": [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ]
-    },
-    "scheduleRunTimes": {
-        "value": [ "2016-09-21T05:30:00Z" ]
-    },
-    "weeklyRetentionDurationCount": {
-        "value": 104
-    },
-    "daysOfTheWeekForMontlyRetention": {
-        "value": [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ]
-    },
-    "weeksOfTheMonthForMonthlyRetention": {
-        "value": [ "First", "Third" ]
-    },
-    "monthlyRetentionDurationCount": {
-        "value": 60
-    },
-    "monthsOfYear": {
-        "value": [ "January", "March", "August" ]
-    },
-    "daysOfTheWeekForYearlyRetention": {
-        "value": [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ]
-    },
-    "weeksOfTheMonthForYearlyRetention": {
-        "value": [ "First", "Third" ]
-    },
-    "yearlyRetentionDurationCount": {
-        "value": 10
-    }
-  }
-      }
     }
     
+
   ]
 }
